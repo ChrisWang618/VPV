@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets API Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            margin: 20px 0;
+        }
+        .menu {
+            margin-bottom: 20px;
+        }
+        .menu a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #007BFF;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .menu a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            width: 100%;
+            height: calc(100vh - 120px);
+            overflow: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        img {
+            max-width: 100px; /* 控制圖片大小 */
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>產品資料</h1>
+    <div class="menu">
+        <a href="#" onclick="loadSheetData('韓國站優惠商品')">韓國站優惠商品</a>
+        <a href="#" onclick="loadSheetData('健康食品')">健康食品</a>
+        <a href="#" onclick="loadSheetData('保養彩妝')">保養彩妝</a>
+        <a href="#" onclick="loadSheetData('身體髮膚')">身體髮膚</a>
+        <a href="#" onclick="loadSheetData('生活用品')">生活用品</a>
+        <a href="#" onclick="loadSheetData('吃吃喝喝')">吃吃喝喝</a>
+        <a href="#" onclick="loadSheetData('男士用品')">男士用品</a>
+        <a href="#" onclick="loadSheetData('女士用品')">女士用品</a>
+        <a href="#" onclick="loadSheetData('輔銷用品')">輔銷用品</a>
+    </div>
+    <div class="content" id="sheetContent"></div>
+
+ <script>
+    const API_KEY = 'AIzaSyAq756oYehEuoYdFoai3axSGz7_adOooac'; // 使用你自己的 API 金鑰
+    const SPREADSHEET_ID = '1IhyrGyCmUwVW0lzzBrpVhFJFUcWdIETNmNXQj_qgm'; // 試算表 ID
+
+    // 使用工作表名稱
+    function loadSheetData(sheetName) {
+        const range = `${sheetName}!A:H`; // 修改為只獲取 A 和 B 欄
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                displayData(data.values);
+            })
+            .catch(error => {
+                console.error('Error fetching sheet data:', error);
+            });
+    }
+
+    function displayData(rows) {
+        const contentDiv = document.getElementById('sheetContent');
+        contentDiv.innerHTML = ''; // 清空目前顯示的內容
+
+        if (!rows || rows.length === 0) {
+            contentDiv.innerHTML = '無資料可顯示';
+            return;
+        }
+
+        // 創建一個 HTML 表格來顯示資料
+        const table = document.createElement('table');
+        const headerRow = document.createElement('tr');
+
+        // 創建表格標題，這裡我們只顯示 A 和 B 欄
+        rows[0].slice(0, 2).forEach(cell => {
+            const th = document.createElement('th');
+            th.textContent = cell;
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+
+        // 創建表格內容
+        rows.slice(1).forEach(row => {
+            const tr = document.createElement('tr');
+            for (let index = 0; index < 2; index++) { // 只顯示 A 和 B 欄
+                const td = document.createElement('td');
+                
+                // 如果 A 欄是圖片，則插入圖片
+                if (index === 0) { // 這是 A 欄位
+                    const imageUrl = row[7]; // 假設 H 欄的圖片 URL 在索引 7
+                    if (imageUrl && isImageURL(imageUrl)) { // 確保 imageUrl 不是 undefined 或空字符串
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.onerror = function() {
+                            img.src = 'default-image-url.jpg'; // 使用預設圖片
+                        };
+                        td.appendChild(img);
+                    } else {
+                        td.textContent = row[0]; // 如果不是圖片，顯示原始資料
+                    }
+                } else {
+                     // 在 B 欄顯示自定義格式
+                    const cValue = row[2] || ""; // C 欄的值
+                    const dValue = row[3] || ""; // D 欄的值
+                    const fValue = row[5] || ""; // F 欄的值
+                    
+                    // 生成格式化的 B 欄顯示內容，將換行符號替換為 <br>
+                    const formattedText = `${cValue}<br>${dValue}<br>$${fValue}`;
+                    td.innerHTML = formattedText; // 使用 innerHTML 顯示換行
+                }
+                tr.appendChild(td);
+            }
+            table.appendChild(tr);
+        });
+
+        contentDiv.appendChild(table);
+    }
+
+    // 判斷是否為圖片 URL
+    function isImageURL(url) {
+        // 確保 URL 是有效的字串，並且是以 .jpeg、.jpg、.gif 或 .png 結尾
+        return (typeof url === 'string' && url.match(/\.(jpeg|jpg|gif|png)$/) != null);
+    }
+</script>
